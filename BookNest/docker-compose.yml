@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: docker
+      POSTGRES_PASSWORD: docker
+      POSTGRES_DB: booknest_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: docker@docker.com
+      PGADMIN_DEFAULT_PASSWORD: docker
+    ports:
+      - "20080:80"
+
+  web:
+    build:
+      context: .
+    container_name: booknest_web
+    restart: always
+    command: python manage.py runserver 0.0.0.0:8001
+    volumes:
+      - .:/app
+    ports:
+      - "8001:8001"
+    depends_on:
+      - db
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    restart: always
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:
