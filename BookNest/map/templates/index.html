@@ -4,5 +4,96 @@
 {% block title %}Location Details{% endblock %}
 
 {% block content %}
-<p>Homepage</p>
+    <div class="container my-3">
+        <div class="row height d-flex justify-content-center align-items-center">
+            <div class="col-md-8 text-center">
+                <h1 class="text-white text-4xl font-semibold mb-4">
+                    Find Parking Anywhere in Ireland
+                </h1>
+                
+                <div class="search d-flex">
+                    <i class="fa fa-search text-white"></i>
+                    <input type="text" class="form-control" id="locationSearch" placeholder="Enter a location to search">
+                    <button class="btn btn-primary ml-2 bg-black text-white hover:bg-gray-800" id="searchBtn">Search</button>
+                    <button class="btn btn-primary ml-2 bg-black text-white hover:bg-gray-800" id="allBtn">Show All Locations</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="map" style="height: 400px;"></div>
+
+    <script>
+        var map = L.map('map').setView([53.384811, -6.263190], 13);  // Defaulting to TUD Location
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        var markers = [];
+
+        // Function to update the map with a new marker and bind popup to it
+        function updateMap(latitude, longitude, name, address) {
+            var marker = L.marker([latitude, longitude]).addTo(map);
+            marker.bindPopup('<b>' + name + '</b><br />' + address + '<br />Latitude: ' + latitude + '<br />Longitude: ' + longitude);
+            markers.push(marker);  // Store marker to manage bounds later
+        }
+
+        function loadAllLocations() {
+            fetch('/get-all-locations')  
+                .then(response => response.json())
+                .then(data => {
+                    markers.forEach(marker => map.removeLayer(marker));
+                    markers = [];  
+
+                    data.locations.forEach(location => {
+                        var latitude = parseFloat(location.latitude);
+                        var longitude = parseFloat(location.longitude);
+                        var name = location.name;
+                        var address = location.address;
+
+                        updateMap(latitude, longitude, name, address);  
+                    });
+
+                    var group = new L.featureGroup(markers);
+                    map.fitBounds(group.getBounds());
+                })
+                .catch(error => {
+                    console.error("Error fetching locations:", error);
+                    alert("Error fetching locations.");
+                });
+        }
+
+        document.getElementById('allBtn').addEventListener('click', function() {
+            loadAllLocations();  
+        });
+
+        // Search logic for pulling coordinates and updating the map
+        document.getElementById('searchBtn').addEventListener('click', function() {
+            var query = document.getElementById('locationSearch').value;
+
+            if (query) {
+                fetch(`/search-location/?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+
+                        markers.forEach(marker => map.removeLayer(marker));
+                        markers = [];  
+
+                        if (data && data.locations && data.locations.length > 0) {
+                            var latitude = parseFloat(data.locations[0].latitude);
+                            var longitude = parseFloat(data.locations[0].longitude);
+                            var name = data.locations[0].name;
+                            var address = data.locations[0].address;
+
+                            updateMap(latitude, longitude, name, address);  // Update map with search result
+                        } else {
+                            alert("Location not found!");
+                        }
+                    })
+                    .catch(error => console.error("Error fetching location:", error));
+            }
+        });
+    </script>
+
 {% endblock %}
