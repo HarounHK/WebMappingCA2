@@ -1,99 +1,117 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Location Details{% endblock %}
+{% block title %}BookNest{% endblock %}
 
 {% block content %}
-    <div class="container my-3">
-        <div class="row height d-flex justify-content-center align-items-center">
-            <div class="col-md-8 text-center">
-                <h1 class="text-white text-4xl font-semibold mb-4">
-                    Find Parking Anywhere in Ireland
-                </h1>
-                
-                <div class="search d-flex">
-                    <i class="fa fa-search text-white"></i>
-                    <input type="text" class="form-control" id="locationSearch" placeholder="Enter a location to search">
-                    <button class="btn btn-primary ml-2 bg-black text-white hover:bg-gray-800" id="searchBtn">Search</button>
-                    <button class="btn btn-primary ml-2 bg-black text-white hover:bg-gray-800" id="allBtn">Show All Locations</button>
-                </div>
+<div class="container my-3">
+    <div class="row height d-flex justify-content-center align-items-center">
+        <div class="col-md-8 text-center">
+            <h1 class="text-white text-4xl font-semibold mb-4">
+                Find Libraries and Bookstores Nearby
+            </h1>
+
+            <div class="search d-flex">
+                <i class="fa fa-search text-white"></i>
+                <input type="text" class="form-control" id="locationSearch" placeholder="Enter a location to search">
+                <button class="btn btn-primary ml-2 bg-black text-white hover:bg-gray-800" id="librarySearchBtn">Search Libraries</button>
+                <button class="btn btn-primary ml-2 bg-black text-white hover:bg-gray-800" id="bookstoreSearchBtn">Search Bookstores</button>
+                <button class="btn btn-primary ml-2 bg-black text-white hover:bg-gray-800" id="specificSearchBtn">Search by Name</button>
             </div>
         </div>
     </div>
+</div>
 
-    <div id="map" style="height: 400px;"></div>
+<div id="map" style="height: 400px; margin-bottom: 20px;"></div>
 
-    <script>
-        var map = L.map('map').setView([53.384811, -6.263190], 13);  // Defaulting to TUD Location
+<script>
+    var map = L.map('map').setView([53.384811, -6.263190], 13); // Defaulting to TUD Location
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
 
-        var markers = [];
+    var markers = [];
+    
+    // Function to update the map with a new marker and bind popup to it
+    function updateMap(latitude, longitude, name, additionalInfo) {
+        var popupContent = `
+            <b>${name}</b><br>
+            Latitude: ${latitude}<br>
+            Longitude: ${longitude}<br>
+            Address: ${additionalInfo.address || 'Not Available'}<br>
+            Website: <a href="${additionalInfo.website || '#'}" target="_blank">${additionalInfo.website || 'Not Available'}</a><br>
+            Wheelchair Accessible: ${additionalInfo.wheelchair || 'Not Specified'}<br>
+            Operator: ${additionalInfo.operator || 'Not Specified'}<br>
+        `;
+        var marker = L.marker([latitude, longitude]).addTo(map);
+        marker.bindPopup(popupContent);
+        markers.push(marker);
+    }
 
-        // Function to update the map with a new marker and bind popup to it
-        function updateMap(latitude, longitude, name, address) {
-            var marker = L.marker([latitude, longitude]).addTo(map);
-            marker.bindPopup('<b>' + name + '</b><br />' + address + '<br />Latitude: ' + latitude + '<br />Longitude: ' + longitude);
-            markers.push(marker);  // Store marker to manage bounds later
-        }
+    // clearing all markers from map
+    function clearMarkers() {
+        markers.forEach(marker => map.removeLayer(marker));
+        markers = [];
+    }
 
-        function loadAllLocations() {
-            fetch('/get-all-locations')  
-                .then(response => response.json())
-                .then(data => {
-                    markers.forEach(marker => map.removeLayer(marker));
-                    markers = [];  
+    // loading locations depednding on button
+    function loadLocations(queryType) {
+        var mapCenter = map.getCenter();
+        var radius = map.getBounds().getNorthEast().distanceTo(map.getCenter());
 
+        fetch(`/search-nearby/?q=${queryType}&latitude=${mapCenter.lat}&longitude=${mapCenter.lng}&radius=${Math.round(radius)}`)
+            .then(response => response.json())
+            .then(data => {
+                clearMarkers();
+                if (data.locations && data.locations.length > 0) {
                     data.locations.forEach(location => {
-                        var latitude = parseFloat(location.latitude);
-                        var longitude = parseFloat(location.longitude);
-                        var name = location.name;
-                        var address = location.address;
-
-                        updateMap(latitude, longitude, name, address);  
+                        updateMap(location.latitude, location.longitude, location.name, location);
                     });
+                } else {
+                    alert(`Not found in this area.`);
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching locations:", error);
+                alert("An error occurred while fetching locations.");
+            });
+    }
 
-                    var group = new L.featureGroup(markers);
-                    map.fitBounds(group.getBounds());
-                })
-                .catch(error => {
-                    console.error("Error fetching locations:", error);
-                    alert("Error fetching locations.");
-                });
+    document.getElementById('librarySearchBtn').addEventListener('click', function () {
+        loadLocations('libraries');
+    });
+
+    document.getElementById('bookstoreSearchBtn').addEventListener('click', function () {
+        loadLocations('bookstores');
+    });
+
+    // Search logic for pulling coordinates and updating the map
+    document.getElementById('specificSearchBtn').addEventListener('click', function () {
+        var query = document.getElementById('locationSearch').value.trim();
+        var mapCenter = map.getCenter();
+        var radius = map.getBounds().getNorthEast().distanceTo(map.getCenter());
+
+        if (!query || query.length < 2) {
+            alert("Please enter a search term with at least 2 characters.");
+            return;
         }
 
-        document.getElementById('allBtn').addEventListener('click', function() {
-            loadAllLocations();  
-        });
-
-        // Search logic for pulling coordinates and updating the map
-        document.getElementById('searchBtn').addEventListener('click', function() {
-            var query = document.getElementById('locationSearch').value;
-
-            if (query) {
-                fetch(`/search-location/?q=${encodeURIComponent(query)}`)
-                    .then(response => response.json())
-                    .then(data => {
-
-                        markers.forEach(marker => map.removeLayer(marker));
-                        markers = [];  
-
-                        if (data && data.locations && data.locations.length > 0) {
-                            var latitude = parseFloat(data.locations[0].latitude);
-                            var longitude = parseFloat(data.locations[0].longitude);
-                            var name = data.locations[0].name;
-                            var address = data.locations[0].address;
-
-                            updateMap(latitude, longitude, name, address);  // Update map with search result
-                        } else {
-                            alert("Location not found!");
-                        }
-                    })
-                    .catch(error => console.error("Error fetching location:", error));
-            }
-        });
-    </script>
-
+        fetch(`/search-location/?q=${encodeURIComponent(query)}&latitude=${mapCenter.lat}&longitude=${mapCenter.lng}&radius=${Math.round(radius)}`)
+            .then(response => response.json())
+            .then(data => {
+                clearMarkers();
+                if (data.locations && data.locations.length > 0) {
+                    data.locations.forEach(location => {
+                        updateMap(location.latitude, location.longitude, location.name, location);
+                    });
+                } else {
+                    alert("Location not dfound");
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching location:", error);
+            });
+    });
+</script>
 {% endblock %}

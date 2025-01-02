@@ -2,6 +2,35 @@ from django.contrib.gis.db import models
 from django.contrib import admin
 from django.contrib.gis.geos import Point
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
+
+class Book(models.Model):
+    title = models.CharField(max_length=255)
+    author = models.CharField(max_length=255, null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
+    genres = models.TextField(null=True, blank=True)
+    avg_rating = models.FloatField(null=True, blank=True)
+    num_ratings = models.IntegerField(null=True, blank=True)
+    book_url = models.URLField(null=True, blank=True)
+
+    def __str__(self):
+        return self.title
+
+class UserBooks(models.Model):
+    STATUS_CHOICES = [
+        ('TO_READ', 'Want to Read'),
+        ('READ', 'Read'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    book = models.ForeignKey(Book, on_delete=models.CASCADE)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
+
+    class Meta:
+        unique_together = ('user', 'book', 'status')
+
+    def __str__(self):
+        return f"{self.user.username} - {self.book.title} - {self.status}"
 
 User = get_user_model()
 

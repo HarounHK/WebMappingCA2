@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %} Parking Finder {% endblock %}</title>
+    <title>{% block title %} BookNest {% endblock %}</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Leaflet JS -->
@@ -35,32 +35,55 @@
         footer {
             background-color: #000000; 
             color: #ffffff;
+            border-top: 1px solid #444;
+            padding-top: 20px;
+        }
+
+        .footer-link {
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .footer-link:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
+
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg">
+    <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid">
-            <a class="navbar-brand text-white" href="{% url 'index' %}">Parking Finder</a>
+            <a class="navbar-brand" href="{% url 'index' %}">BookNest</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'booklist' %}">BooksList</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'mybooks' %}">MyBooks</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'bookswatchlist' %}">BooksWatchlist</a>
+                    </li>
+                </ul>
                 <ul class="navbar-nav ms-auto">
                     {% if user.is_authenticated %}
                         <li class="nav-item">
-                            <a class="nav-link text-white" href="#">Welcome, {{ user.username }}</a>
+                            <a class="nav-link" href="#">Welcome, {{ user.username }}</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-white" href="{% url 'logout' %}">Logout</a>
+                            <a class="nav-link" href="{% url 'logout' %}">Logout</a>
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link text-white" href="{% url 'login' %}">Login</a>
+                            <a class="nav-link" href="{% url 'login' %}">Login</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-white" href="{% url 'signup' %}">Sign Up</a>
+                            <a class="nav-link" href="{% url 'signup' %}">Sign Up</a>
                         </li>
                     {% endif %}
                 </ul>
@@ -75,9 +98,9 @@
     </div>
 
     <!-- Footer -->
-    <footer class="text-center py-4">
+    <footer class="text-center py-5">
         <div class="container">
-            <p class="mb-0">© 2024 Parking Finder. All Rights Reserved.</p>
+            <p class="mb-0">© 2024 BookNest. All Rights Reserved.</p>
         </div>
     </footer>
 
