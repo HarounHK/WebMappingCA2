@@ -9,6 +9,7 @@ from django.contrib.gis.geos.point import Point
 from .models import Book, UserBooks  
 from django.db.models import Q  
 from django.core.paginator import Paginator 
+from .models import SavedLocation
 
 # Overpass API url
 OVERPASS_API_URL = "http://overpass-api.de/api/interpreter"
@@ -231,3 +232,42 @@ def remove_from_userbooks(request):
         UserBooks.objects.filter(user=request.user, book=book, status=status).delete()
 
         return redirect(request.META.get('HTTP_REFERER', 'mybooks'))
+    
+# Saving locatiopns to saved locations table
+def save_location(request):
+    if request.method == 'POST':
+        import json
+        data = json.loads(request.body)
+
+        name = data.get('name')
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+
+        if name and latitude and longitude:
+            SavedLocation.objects.create(
+                user=request.user,
+                name=name,
+                latitude=latitude,
+                longitude=longitude
+            )
+            return JsonResponse({'message': 'Location saved'})
+        return JsonResponse({'error': 'Missing data'}, status=400)
+
+    return JsonResponse({'error': 'Invalid request'}, status=405)
+
+# Removes book from users lists(mybooks/watchlist)
+def saved_locations(request):
+    locations = SavedLocation.objects.filter(user=request.user)
+    return JsonResponse({'locations': list(locations.values())})
+
+# Deletig location from saved locations
+def delete_location(request, id):
+    if request.method == "DELETE":
+        try:
+            location = SavedLocation.objects.get(id=id)
+            location.delete()  
+        except SavedLocation.DoesNotExist:
+            return JsonResponse({"error": "Location doiesnt Exist"}, status=404)
+        except Exception as e:
+            return JsonResponse({"error": f"An error occurred: {str(e)}"}, status=500)
+    return JsonResponse({"error": "Invalid request method."}, status=400)

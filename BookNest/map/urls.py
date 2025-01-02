@@ -13,4 +13,7 @@ urlpatterns = [
     path('mybooks/', views.mybooks, name='mybooks'),
     path('bookswatchlist/', views.bookswatchlist, name='bookswatchlist'),
     path('remove-from-userbooks/', views.remove_from_userbooks, name='remove_from_userbooks'),
+    path('save-location/', views.save_location, name='save_location'),
+    path('saved-locations/', views.saved_locations, name='saved_locations'),
+    path('delete-location/<int:id>/', views.delete_location, name='delete_location'),
 ]

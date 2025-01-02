@@ -63,3 +63,12 @@ class Location(models.Model):
         return self.name
 
 admin.site.register(Location)
+
+class SavedLocation(models.Model):
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+
+    def __str__(self):
+        return self.name

@@ -24,7 +24,27 @@
 
 <div id="map" style="height: 400px; margin-bottom: 20px;"></div>
 
+<!-- Save Location Button -->
+<button class="btn btn-success mt-3" id="saveLocationBtn">Save Current Location</button>
+
+<!-- Table for Saved Locations -->
+<h2 class="mt-4">Saved Locations</h2>
+<table class="table mt-3">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Latitude</th>
+            <th>Longitude</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="savedLocationsTable">
+        <!-- Rows will be dynamically populated -->
+    </tbody>
+</table>
+
 <script>
+    // Initialize the map
     var map = L.map('map').setView([53.384811, -6.263190], 13); // Defaulting to TUD Location
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -32,7 +52,7 @@
     }).addTo(map);
 
     var markers = [];
-    
+
     // Function to update the map with a new marker and bind popup to it
     function updateMap(latitude, longitude, name, additionalInfo) {
         var popupContent = `
@@ -49,13 +69,13 @@
         markers.push(marker);
     }
 
-    // clearing all markers from map
+    // Function to clear all markers from the map
     function clearMarkers() {
         markers.forEach(marker => map.removeLayer(marker));
         markers = [];
     }
 
-    // loading locations depednding on button
+    // Function to load locations based on button click
     function loadLocations(queryType) {
         var mapCenter = map.getCenter();
         var radius = map.getBounds().getNorthEast().distanceTo(map.getCenter());
@@ -106,12 +126,79 @@
                         updateMap(location.latitude, location.longitude, location.name, location);
                     });
                 } else {
-                    alert("Location not dfound");
+                    alert("Location not found.");
                 }
             })
             .catch(error => {
                 console.error("Error fetching location:", error);
             });
     });
+
+    // Saving the current location
+    document.getElementById('saveLocationBtn').addEventListener('click', function () {
+        var mapCenter = map.getCenter();
+
+        var name = "Save";
+
+        fetch('/save-location/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: JSON.stringify({
+                name: name,
+                latitude: mapCenter.lat,
+                longitude: mapCenter.lng
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                alert(data.message);
+                loadSavedLocations();
+            } else {
+                alert("Failed to save location.");
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    });
+
+    // Displaying saved locations
+    function loadSavedLocations() {
+        fetch('/saved-locations/')
+            .then(response => response.json())
+            .then(data => {
+                var table = document.getElementById('savedLocationsTable');
+                table.innerHTML = '';
+                data.locations.forEach(location => {
+                    var row = `
+                        <tr>
+                            <td>${location.name}</td>
+                            <td>${location.latitude}</td>
+                            <td>${location.longitude}</td>
+                            <td>
+                                <button class="btn btn-danger" onclick="removeLocation(${location.id})">Remove</button>
+                            </td>
+                        </tr>
+                    `;
+                    table.innerHTML += row;
+                });
+            });
+    }
+
+    // Removing a saved location
+    function removeLocation(id) {
+        fetch(`/delete-location/${id}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+            }
+        })
+        .then(() => loadSavedLocations())
+        .catch(error => console.error('Error:', error));
+    }
+
+    loadSavedLocations();
 </script>
 {% endblock %}
