@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-y522-w%u1sftgt=26l)4=e35xvfm6-1b$bh^#mrh*rkw=v)92j'
 
-DEBUG = True
+DEBUG = False
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
 # Application definition
@@ -79,7 +79,7 @@ DATABASES = {
         'NAME': 'booknest_db',
         'USER': 'docker',
         'PASSWORD': 'docker',
-        'HOST': 'db',  
+        'HOST': 'db',
         'PORT': '5432',
     }
 }
